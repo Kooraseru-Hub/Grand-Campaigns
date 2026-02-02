@@ -1,0 +1,135 @@
+.card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 2px solid rgba(212, 175, 55, 0.2);
+  border-radius: 16px;
+  padding: 32px;
+  transition: all 0.4s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, #D4AF37, #FFD700, #D4AF37);
+  border-radius: 16px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: -1;
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(212, 175, 55, 0.02) 10px, rgba(212, 175, 55, 0.02) 20px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.card-hoverable {
+  cursor: pointer;
+}
+
+.card-hoverable:hover {
+  transform: translateY(-3px);
+  border-color: rgba(212, 175, 55, 0.3);
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.03) 0%, rgba(255, 255, 255, 0.03) 100%);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.card-hoverable:hover::before {
+  opacity: 0;
+}
+
+/* Non-hoverable cards should have default cursor */
+.card:not(.card-hoverable):not(.card-clickable) {
+  cursor: default;
+}
+
+.card-clickable {
+  cursor: pointer;
+}
+
+/* Variants */
+.card-default {
+  /* Default styling */
+}
+
+.card-gold {
+  border: 2px solid #D4AF37;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(255, 215, 0, 0.08));
+  box-shadow: 0 8px 32px rgba(212, 175, 55, 0.4), inset 0 0 40px rgba(212, 175, 55, 0.1);
+}
+
+.card-gold::before {
+  opacity: 0.3;
+}
+
+.card-danger {
+  border-color: rgba(139, 0, 0, 0.3);
+  background: rgba(139, 0, 0, 0.05);
+}
+
+.card-success {
+  border-color: rgba(45, 80, 22, 0.3);
+  background: rgba(45, 80, 22, 0.05);
+}
+
+/* Header */
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.card-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.card-header-text {
+  flex: 1;
+}
+
+.card-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+  cursor: default;
+}
+
+.card-subtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  cursor: default;
+}
+
+/* Body */
+.card-body {
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+  cursor: default;
+}
+
+.card-body p {
+  cursor: default;
+}

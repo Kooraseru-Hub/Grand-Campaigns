@@ -1,0 +1,364 @@
+import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useGameData } from '../context/GameDataContext';
+import { mockPermissions, permissionLevels, calculateMaxPermissionLevel, getPermissionLevel } from '../services/permissionsData';
+import Card from '../components/common/Card';
+import Button from '../components/common/Button';
+import Modal from '../components/common/Modal';
+import Toast from '../components/common/Toast';
+import './LeaderDashboard.css';
+
+const LeaderDashboard = () => {
+  const { user } = useAuth();
+  const { nations, createDiplomaticAction, createMilitaryOrder } = useGameData();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [showDiplomacyModal, setShowDiplomacyModal] = useState(false);
+  const [showMilitaryModal, setShowMilitaryModal] = useState(false);
+  const [showGrantModal, setShowGrantModal] = useState(false);
+  const [permissions, setPermissions] = useState(mockPermissions.filter(p => p.nationId === 1));
+  const [newPermission, setNewPermission] = useState({
+    playerUsername: '',
+    rallyPoints: 0,
+    permissionLevel: 1
+  });
+  const [toast, setToast] = useState({ show: false, message: '', type: 'info' });
+
+  const myNation = user?.nation || nations.find(n => n.id === user?.nationId);
+
+  const showToast = (message, type = 'info') => {
+    setToast({ show: true, message, type });
+  };
+
+  const handleDiplomaticAction = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    
+    const action = {
+      type: formData.get('type'),
+      from: myNation.id,
+      to: parseInt(formData.get('target')),
+      fromNation: myNation.name,
+      toNation: nations.find(n => n.id === parseInt(formData.get('target')))?.name,
+      message: formData.get('message')
+    };
+
+    const result = await createDiplomaticAction(action);
+    if (result.success) {
+      showToast('Diplomatic action submitted successfully!', 'success');
+      setShowDiplomacyModal(false);
+    } else {
+      showToast('Failed to submit action', 'error');
+    }
+  };
+
+  const handleMilitaryOrder = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    
+    const order = {
+      nationId: myNation.id,
+      type: formData.get('orderType'),
+      target: formData.get('target'),
+      forces: parseInt(formData.get('forces')),
+      notes: formData.get('notes')
+    };
+
+    const result = await createMilitaryOrder(order);
+    if (result.success) {
+      showToast('Military order issued successfully!', 'success');
+      setShowMilitaryModal(false);
+    } else {
+      showToast('Failed to issue order', 'error');
+    }
+  };
+
+  if (!myNation) {
+    return (
+      <div className="leader-dashboard">
+        <div className="error-message">
+          <h2>No Nation Assigned</h2>
+          <p>You must be assigned to a nation to access the Leader Dashboard.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="leader-dashboard">
+      <Toast 
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.show}
+        onClose={() => setToast({ ...toast, show: false })}
+      />
+
+      <div className="dashboard-container">
+        {/* Header */}
+        <div className="leader-header">
+          <div className="leader-nation-info">
+            <span className="leader-emblem">{myNation.emblem}</span>
+            <div>
+              <h1 className="leader-title">{myNation.name} High Command</h1>
+              <p className="leader-subtitle">{user.username} - {myNation.leader}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="quick-actions">
+          <Button 
+            variant="primary"
+            onClick={() => setShowDiplomacyModal(true)}
+          >
+            Issue Diplomatic Order
+          </Button>
+          <Button 
+            variant="danger"
+            onClick={() => setShowMilitaryModal(true)}
+          >
+            Issue Military Order
+          </Button>
+          <Button variant="secondary">
+            Operation Reports
+          </Button>
+        </div>
+
+        {/* Nation Overview */}
+        <div className="overview-grid">
+          <Card title="National Power" variant="gold">
+            <div className="power-display">
+              <div className="power-value-large">{myNation.power}</div>
+              <div className="power-bar-large">
+                <div className="power-fill-large" style={{ width: `${myNation.power}%` }}></div>
+              </div>
+            </div>
+          </Card>
+
+          <Card title="Population">
+            <div className="stat-display">
+              <div className="stat-value-large">{(myNation.population / 1000000).toFixed(1)}M</div>
+              <div className="stat-label">Citizens</div>
+            </div>
+          </Card>
+
+          <Card title="Territory">
+            <div className="stat-display">
+              <div className="stat-value-large">PLACEHOLDER</div>
+              <div className="stat-label">Provinces</div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Resources */}
+        <Card className="resources-card">
+          <h2 className="card-section-title">National Resources</h2>
+          <div className="resources-grid-large">
+            <div className="resource-box-large">
+              <div className="resource-info">
+                <div className="resource-label">Gold</div>
+                <div className="resource-amount-large">{myNation.resources.gold.toLocaleString()}</div>
+                <div className="resource-change positive">+2,500/day</div>
+              </div>
+            </div>
+            <div className="resource-box-large">
+              <div className="resource-info">
+                <div className="resource-label">Manpower</div>
+                <div className="resource-amount-large">{myNation.resources.manpower.toLocaleString()}</div>
+                <div className="resource-change negative">-1,200/day</div>
+              </div>
+            </div>
+            <div className="resource-box-large">
+              <div className="resource-info">
+                <div className="resource-label">Supplies</div>
+                <div className="resource-amount-large">{myNation.resources.supplies.toLocaleString()}</div>
+                <div className="resource-change positive">+800/day</div>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Diplomatic Status */}
+        <Card className="diplomacy-card">
+          <h2 className="card-section-title">Diplomatic Relations</h2>
+          <div className="diplomacy-overview">
+            <div className="diplomacy-section">
+              <h3 className="diplomacy-subtitle">Allies ({myNation.allies.length})</h3>
+              <div className="nation-flags">
+                {myNation.allies.map(allyId => {
+                  const ally = nations.find(n => n.id === allyId);
+                  return ally ? (
+                    <div key={ally.id} className="flag-item" title={ally.name}>
+                      <span className="flag-emblem">{ally.emblem}</span>
+                      <span className="flag-name">{ally.name}</span>
+                    </div>
+                  ) : null;
+                })}
+                {myNation.allies.length === 0 && (
+                  <p className="no-data">No current allies</p>
+                )}
+              </div>
+            </div>
+            <div className="diplomacy-section">
+              <h3 className="diplomacy-subtitle">Enemies ({myNation.enemies.length})</h3>
+              <div className="nation-flags">
+                {myNation.enemies.map(enemyId => {
+                  const enemy = nations.find(n => n.id === enemyId);
+                  return enemy ? (
+                    <div key={enemy.id} className="flag-item" title={enemy.name}>
+                      <span className="flag-emblem">{enemy.emblem}</span>
+                      <span className="flag-name">{enemy.name}</span>
+                    </div>
+                  ) : null;
+                })}
+                {myNation.enemies.length === 0 && (
+                  <p className="no-data">No declared enemies</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Military Overview */}
+        <Card className="military-card">
+          <h2 className="card-section-title">Military Forces</h2>
+          <div className="military-grid">
+            <div className="military-unit">
+              <div className="unit-name">Infantry</div>
+              <div className="unit-count">PLACEHOLDER</div>
+            </div>
+            <div className="military-unit">
+              <div className="unit-name">Cavalry</div>
+              <div className="unit-count">PLACEHOLDER</div>
+            </div>
+            <div className="military-unit">
+              <div className="unit-name">Artillery</div>
+              <div className="unit-count">PLACEHOLDER</div>
+            </div>
+            <div className="military-unit">
+              <div className="unit-name">Navy</div>
+              <div className="unit-count">PLACEHOLDER</div>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Diplomacy Modal */}
+      <Modal
+        isOpen={showDiplomacyModal}
+        onClose={() => setShowDiplomacyModal(false)}
+        title="Diplomatic Action"
+        size="medium"
+      >
+        <form onSubmit={handleDiplomaticAction} className="action-form">
+          <div className="form-group">
+            <label htmlFor="type">Action Type</label>
+            <select id="type" name="type" required>
+              <option value="treaty">Treaty</option>
+              <option value="alliance">Alliance</option>
+              <option value="war_declaration">Declare War</option>
+              <option value="peace_proposal">Propose Peace</option>
+              <option value="trade_agreement">Trade Agreement</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="target">Target Nation</label>
+            <select id="target" name="target" required>
+              <option value="">Select a nation...</option>
+              {nations.filter(n => n.id !== myNation.id).map(nation => (
+                <option key={nation.id} value={nation.id}>
+                  {nation.emblem} {nation.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="message">Message / Terms</label>
+            <textarea
+              id="message"
+              name="message"
+              rows="4"
+              placeholder="Enter diplomatic message or treaty terms..."
+              required
+            ></textarea>
+          </div>
+
+          <div className="form-actions">
+            <Button type="button" variant="secondary" onClick={() => setShowDiplomacyModal(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary">
+              Submit Action
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Military Modal */}
+      <Modal
+        isOpen={showMilitaryModal}
+        onClose={() => setShowMilitaryModal(false)}
+        title="Issue Military Order"
+        size="medium"
+      >
+        <form onSubmit={handleMilitaryOrder} className="action-form">
+          <div className="form-group">
+            <label htmlFor="orderType">Order Type</label>
+            <select id="orderType" name="orderType" required>
+              <option value="attack">Attack</option>
+              <option value="defend">Defend</option>
+              <option value="move">Move Forces</option>
+              <option value="recruit">Recruit Troops</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="target">Target Location</label>
+            <input
+              id="target"
+              name="target"
+              type="text"
+              placeholder="Enter location or province name..."
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="forces">Number of Forces</label>
+            <input
+              id="forces"
+              name="forces"
+              type="number"
+              min="1"
+              max={myNation.resources.manpower}
+              placeholder="Enter troop count..."
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="notes">Notes</label>
+            <textarea
+              id="notes"
+              name="notes"
+              rows="3"
+              placeholder="Additional instructions..."
+            ></textarea>
+          </div>
+
+          <div className="form-actions">
+            <Button type="button" variant="secondary" onClick={() => setShowMilitaryModal(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="danger">
+              Issue Order
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+};
+
+export default LeaderDashboard;

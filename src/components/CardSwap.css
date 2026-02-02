@@ -1,0 +1,33 @@
+.card-swap-container {
+  position: relative;
+  perspective: 2000px;
+  transform-style: preserve-3d;
+}
+
+.card-swap-container .card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: box-shadow 0.3s ease;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+.card-swap-container .card:hover {
+  box-shadow: 0 20px 60px rgba(255, 255, 255, 0.3);
+}
+
+/* Default card styling if none provided */
+.card-swap-container .card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 24px;
+  font-weight: 600;
+}
